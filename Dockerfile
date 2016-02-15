@@ -1,12 +1,13 @@
 FROM golang:alpine
 
-RUN go get github.com/restanrm/twitter
-RUN go install github.com/restanrm/listFollowers
+ENV GOPATH /go
 
-ENV TWITTER_KEY
-ENV TWITTER_SECRET
-ENV TWITTER_USERNAME
-ENV NOTIFY_MY_ANDROID_KEY
+RUN apk add --update git
+RUN adduser -D golang && \
+    chown golang: /go -R
+USER golang
+RUN go get github.com/restanrm/twitter
+RUN go get github.com/restanrm/listFollowers
+
 
 CMD listFollowers
-
