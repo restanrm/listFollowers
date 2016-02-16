@@ -119,8 +119,11 @@ func main() {
 				end = true
 			case <-tick:
 				curFollowers = getFollowers(twitr, username)
+				if len(curFollowers.Ids) == 0 {
+					continue
+				}
 				lost, win := diffFollowers(prevFollowers.Ids, curFollowers.Ids)
-				res := parseResult(twitr, result{lose: lost, win: win})
+				res := parseResult(twitr, result{lose: lost, win: win, source: curFollowers})
 				notify(res)
 				prevFollowers = curFollowers
 			}
@@ -134,11 +137,13 @@ func main() {
 }
 
 type result struct {
-	win  []int
-	lose []int
+	source Followers
+	win    []int
+	lose   []int
 }
 
 type Result struct {
+	Source                  Followers
 	WinMessage, LoseMessage string
 	Win                     []User
 	Lose                    []User
@@ -146,6 +151,7 @@ type Result struct {
 
 func parseResult(twitr twitter.Twitter, tab result) Result {
 	var out Result
+	out.Source = tab.source
 
 	fn := func(dest *[]User, source []int) {
 		for _, id := range source {
@@ -186,15 +192,21 @@ func (s *stringWriter) Write(p []byte) (n int, err error) {
 func (s stringWriter) String() string { return s.s }
 
 func notify(result Result) {
+	if result.Source.Ids == nil {
+		return
+	}
 	err := templates.ExecuteTemplate(os.Stdout, "console", result)
 	handleError(err)
 	if nmaKey != "" {
 		var s stringWriter
 		err = templates.ExecuteTemplate(&s, "nma", result)
 		handleError(err)
+		if s.s == "" {
+			return
+		}
 		n := nma.New(nmaKey)
 		e := nma.Notification{
-			Application: "GoTweetNotifier",
+			Application: "ListFollowers",
 			Event:       "Liste of followers",
 			Description: s.s,
 			ContentType: "text/html",
