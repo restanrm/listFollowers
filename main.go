@@ -94,9 +94,11 @@ func main() {
 	secret := os.Getenv("TWITTER_SECRET")
 	checkEnvVar(secret)
 	nmaKey = os.Getenv("NOTIFY_MY_ANDROID_KEY") // this parameter is optional, no need to check
-	n := nma.New(nmaKey)
-	err := n.Verify(nmaKey)
-	handleError(err)
+	if nmaKey != "" {
+		n := nma.New(nmaKey)
+		err := n.Verify(nmaKey)
+		handleError(err)
+	}
 
 	twitr = twitter.NewTwitter(key, secret)
 	defer twitr.Close()
